@@ -1,5 +1,5 @@
 // Initialize earthquake data query
-d3.json("https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson", 
+d3.json("https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson", 
     function(data) {
         createFeatures(data.features);
     }
@@ -8,6 +8,18 @@ d3.json("https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojs
 // Build markers and popups
 function createFeatures(earthquakeData) {
 
+    var earthquakes = L.geoJSON(earthquakeData, {
+        pointToLayer: function (feature, latlng) {
+            
+            return L.circleMarker(latlng,
+                {
+                    radius: feature.properties.mag*3,
+                }
+            )
+        },
+        onEachFeature: onEachFeature,
+    });
+
     function onEachFeature(feature, layer) {
         layer.bindPopup(`<h3>${feature.properties.place}</h3><hr>
             <p>
@@ -15,11 +27,7 @@ function createFeatures(earthquakeData) {
                 Magnitude: ${feature.properties.mag}<br>
                 Depth: ${feature.geometry.coordinates[2]}
             </p>`);
-  }
-
-    var earthquakes = L.geoJSON(earthquakeData, {
-        onEachFeature: onEachFeature,
-    });
+    }
 
     createMap(earthquakes);
 }
@@ -36,6 +44,18 @@ function createMap(earthquakes) {
         accessToken: API_KEY
     });
 
+    var darkmap = L.tileLayer("https://api.mapbox.com/styles/v1/mapbox/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}", {
+        attribution: "Map data &copy; <a href=\"https://www.openstreetmap.org/\">OpenStreetMap</a> contributors, <a href=\"https://creativecommons.org/licenses/by-sa/2.0/\">CC-BY-SA</a>, Imagery © <a href=\"https://www.mapbox.com/\">Mapbox</a>",
+        maxZoom: 18,
+        id: "dark-v10",
+        accessToken: API_KEY
+    });
+
+    var baseMaps = {
+        "Street Map": streetmap,
+        "Dark Map": darkmap
+    };
+
     var overlayMaps = {
         Earthquakes: earthquakes
     };
@@ -46,7 +66,8 @@ function createMap(earthquakes) {
         layers: [streetmap, earthquakes]
     });
 
-    L.control.layers(streetmap, overlayMaps, {
+    L.control.layers(baseMaps, overlayMaps, {
         collapsed: false
     }).addTo(myMap);
+
 }
