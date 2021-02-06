@@ -49,8 +49,9 @@ function onEachEarthquake(feature, layer) {
 function earthquakePoints(feature, latlng) {            
     return L.circleMarker(latlng,
         {
-            radius: feature.properties.mag*3,
+            radius: feature.properties.mag*2,
             color: "black",
+            opacity: 0.4,
             weight: 1,
             fillOpacity: 0.9,
             fillColor: chooseColor(feature.geometry.coordinates[2])
