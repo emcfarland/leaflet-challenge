@@ -73,27 +73,40 @@ function createMap(earthquakes) {
     L.control.layers(baseMaps, overlayMaps, {
         collapsed: false
     }).addTo(myMap);
+    
+    var legend = L.control({position: 'bottomright'});
 
+    legend.onAdd = function (map) {
+
+        var div = L.DomUtil.create('div', 'info legend');
+        var depths = [-10, 10, 30, 50, 70, 90];
+
+        for (var i = 0; i < depths.length; i++) {
+            div.innerHTML +=
+                '<i style="background:' + chooseColor(depths[i]+1) + '"></i> ' +
+                depths[i] + (depths[i + 1] ? '&ndash;' + depths[i + 1] + '<br>' : '+');
+        }
+
+            return div;
+    };
+
+    legend.addTo(myMap);
 }
 
 
 
 function chooseColor(depth) {
-    if (depth < 0) {
-        return "#00FF00";
-    } else if (depth < 15) {
-        return "#58FF00";
-    } else if (depth < 30) {
-        return "#9FFF00";
-    } else if (depth < 45) {
-        return "#E5FF00";
-    } else if (depth < 60) {
-        return "#FFD300";
-    } else if (depth < 75) {
-        return "#FF8C00";
-    } else if (depth < 90) {
-        return "#FF4600";
-    } else {
+    if (depth > 90) {
         return "#FF0000";
+    } else if (depth > 70) {
+        return "#FF4600";
+    } else if (depth > 50) {
+        return "#FF8C00";
+    } else if (depth > 30) {
+        return "#FFD300";
+    } else if (depth > 10) {
+        return "#E5FF00";
+    } else {
+        return "#00FF00";
     }
 }
