@@ -5,33 +5,36 @@ d3.json("https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geoj
         // Queries tectonic plate data
         d3.json("https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_boundaries.json",
             function(tectonics) {
+
+                // Passes GeoJSON features to build map layers
                 createFeatures(earthquakes.features, tectonics.features);
             }
         );
     }
 );
 
-function createFeatures(earthquakeData, tectonicData) {
 
-    // Build earthquake map layer
+function createFeatures(earthquakeData, tectonicData) {
+    // Builds earthquake geometry with bubble markers and popups
     var earthquakes = L.geoJSON(earthquakeData, {
-        pointToLayer: pointToLayer,
+        pointToLayer: earthquakePoints,
         onEachFeature: onEachEarthquake,
     });
 
+    // Builds tectonics geometry
     var tectonics = L.geoJSON(tectonicData, {
         style: {
-            "color": "#ff7800",
-            "weight": 3,
-            "opacity": 0.65
+            "color": "#ff0000",
+            "weight": 2,
+            "opacity": 0.7
         }
     });
 
-    
     createMap(earthquakes, tectonics);
 }
 
 
+// Binds popup information about each earthquake to its location
 function onEachEarthquake(feature, layer) {
     layer.bindPopup(`<h3>${feature.properties.place}</h3><hr>
         <p>
@@ -42,7 +45,8 @@ function onEachEarthquake(feature, layer) {
 }
 
 
-function pointToLayer(feature, latlng) {            
+// Styles earthquake locations as bubbles, colored and sized by depth and magnitude, respectively
+function earthquakePoints(feature, latlng) {            
     return L.circleMarker(latlng,
         {
             radius: feature.properties.mag*3,
@@ -55,14 +59,14 @@ function pointToLayer(feature, latlng) {
 }
 
 
-// Build map
+// Builds map layers from features
 function createMap(earthquakes, tectonics) {
-    var streetmap = L.tileLayer("https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}", {
+    var outdoorsmap = L.tileLayer("https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}", {
         attribution: "© <a href='https://www.mapbox.com/about/maps/'>Mapbox</a> © <a href='http://www.openstreetmap.org/copyright'>OpenStreetMap</a> <strong><a href='https://www.mapbox.com/map-feedback/' target='_blank'>Improve this map</a></strong>",
         tileSize: 512,
         maxZoom: 18,
         zoomOffset: -1,
-        id: "mapbox/streets-v11",
+        id: "mapbox/outdoors-v11",
         accessToken: API_KEY
     });
 
@@ -73,31 +77,39 @@ function createMap(earthquakes, tectonics) {
         accessToken: API_KEY
     });
 
+    var satellitemap = L.tileLayer("https://api.mapbox.com/styles/v1/mapbox/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}", {
+        attribution: "Map data &copy; <a href=\"https://www.openstreetmap.org/\">OpenStreetMap</a> contributors, <a href=\"https://creativecommons.org/licenses/by-sa/2.0/\">CC-BY-SA</a>, Imagery © <a href=\"https://www.mapbox.com/\">Mapbox</a>",
+        maxZoom: 18,
+        id: "satellite-v9",
+        accessToken: API_KEY
+    });
+
     var baseMaps = {
-        "Street Map": streetmap,
-        "Dark Map": darkmap
+        "Outdoors Map": outdoorsmap,
+        "Dark Map": darkmap,
+        "Satellite Map": satellitemap,
     };
 
     var overlayMaps = {
         Earthquakes: earthquakes,
         "Tectonic Plates": tectonics
-
     };
 
+    // Initializes map with default visualizations
     var myMap = L.map("map", {
-        center: [37.09, -95.71],
+        center: [20, 0],
         zoom: 2,
-        layers: [streetmap, earthquakes, tectonics]
+        layers: [satellitemap, earthquakes, tectonics]
     });
 
     L.control.layers(baseMaps, overlayMaps, {
         collapsed: false
     }).addTo(myMap);
     
+    // Builds legend (adapted from https://leafletjs.com/examples/choropleth/)
     var legend = L.control({position: 'bottomright'});
 
-    legend.onAdd = function (map) {
-
+    legend.onAdd = function(map) {
         var div = L.DomUtil.create('div', 'info legend');
         var depths = [-10, 10, 30, 50, 70, 90];
 
@@ -106,14 +118,13 @@ function createMap(earthquakes, tectonics) {
                 '<i style="background:' + chooseColor(depths[i]+1) + '"></i> ' +
                 depths[i] + (depths[i + 1] ? '&ndash;' + depths[i + 1] + '<br>' : '+');
         }
-
             return div;
     };
 
     legend.addTo(myMap);
 }
 
-
+// Colors bubbles (and legend) based on earthquake depth
 function chooseColor(depth) {
     if (depth > 90) {
         return "#FF0000";
