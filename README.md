@@ -9,11 +9,11 @@ After building the data layer, Leaflet's boilerplate code is used for creating m
 
 Here is the result:
 
-<insert screenshot>
+![Step-1](Images/leaflet-map-level1.png)
   
 ## Step 2
 In order to get a better understanding of how earthquakes and plate tectonics relate, tectonic plate polygonal data is read in from https://github.com/fraxen/tectonicplates (PB2002_boundaries.json) and another data overlay is created with Leaflet's geoJSON method. Another map tile layer is also created and some styling is adjusted.
 
 Here is the result:
 
-<insert screenshot>
+![Step-2](Images/leaflet-map-level2.png)
