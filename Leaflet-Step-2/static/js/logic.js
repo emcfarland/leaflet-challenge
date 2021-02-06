@@ -1,50 +1,62 @@
-// Initialize earthquake data query
+// Queries earthquake data
 d3.json("https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson", 
-    function(data) {
-        createFeatures(data.features);
+    function(earthquakes) {
+
+        // Queries tectonic plate data
+        d3.json("https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_boundaries.json",
+            function(tectonics) {
+                createFeatures(earthquakes.features, tectonics.features);
+            }
+        );
     }
 );
 
-d3.json("https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_boundaries.json",
-    function(data) {
-        console.log(data);
-    }
-);
+function createFeatures(earthquakeData, tectonicData) {
 
-// Build markers and popups
-function createFeatures(earthquakeData) {
-
+    // Build earthquake map layer
     var earthquakes = L.geoJSON(earthquakeData, {
-        pointToLayer: function (feature, latlng) {
-            
-            return L.circleMarker(latlng,
-                {
-                    radius: feature.properties.mag*3,
-                    color: "black",
-                    weight: 1,
-                    fillOpacity: 0.9,
-                    fillColor: chooseColor(feature.geometry.coordinates[2])
-                }
-            )
-        },
-        onEachFeature: onEachFeature,
+        pointToLayer: pointToLayer,
+        onEachFeature: onEachEarthquake,
     });
 
-    function onEachFeature(feature, layer) {
-        layer.bindPopup(`<h3>${feature.properties.place}</h3><hr>
-            <p>
-                Time: ${new Date(feature.properties.time)}<br>
-                Magnitude: ${feature.properties.mag}<br>
-                Depth: ${feature.geometry.coordinates[2]}
-            </p>`);
-    }
+    var tectonics = L.geoJSON(tectonicData, {
+        style: {
+            "color": "#ff7800",
+            "weight": 3,
+            "opacity": 0.65
+        }
+    });
 
-    createMap(earthquakes);
+    
+    createMap(earthquakes, tectonics);
 }
 
-// Build map
-function createMap(earthquakes) {
 
+function onEachEarthquake(feature, layer) {
+    layer.bindPopup(`<h3>${feature.properties.place}</h3><hr>
+        <p>
+            Time: ${new Date(feature.properties.time)}<br>
+            Magnitude: ${feature.properties.mag}<br>
+            Depth: ${feature.geometry.coordinates[2]}
+        </p>`);
+}
+
+
+function pointToLayer(feature, latlng) {            
+    return L.circleMarker(latlng,
+        {
+            radius: feature.properties.mag*3,
+            color: "black",
+            weight: 1,
+            fillOpacity: 0.9,
+            fillColor: chooseColor(feature.geometry.coordinates[2])
+        }
+    )
+}
+
+
+// Build map
+function createMap(earthquakes, tectonics) {
     var streetmap = L.tileLayer("https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}", {
         attribution: "© <a href='https://www.mapbox.com/about/maps/'>Mapbox</a> © <a href='http://www.openstreetmap.org/copyright'>OpenStreetMap</a> <strong><a href='https://www.mapbox.com/map-feedback/' target='_blank'>Improve this map</a></strong>",
         tileSize: 512,
@@ -67,13 +79,15 @@ function createMap(earthquakes) {
     };
 
     var overlayMaps = {
-        Earthquakes: earthquakes
+        Earthquakes: earthquakes,
+        "Tectonic Plates": tectonics
+
     };
 
     var myMap = L.map("map", {
         center: [37.09, -95.71],
-        zoom: 4,
-        layers: [streetmap, earthquakes]
+        zoom: 2,
+        layers: [streetmap, earthquakes, tectonics]
     });
 
     L.control.layers(baseMaps, overlayMaps, {
@@ -98,7 +112,6 @@ function createMap(earthquakes) {
 
     legend.addTo(myMap);
 }
-
 
 
 function chooseColor(depth) {
